@@ -5,9 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/gorp.v1"
 )
@@ -77,28 +80,94 @@ func checkErr(err error, msg string) {
 	}
 }
 
-func main() {
+func handleEntries(w http.ResponseWriter, r *http.Request) {
 	var shoppinglist []ShoppingEntry
-
-	// initialize the DbMap
 	dbmap := initDb()
 	defer dbmap.Db.Close()
+	// fetch all rows
+	_, err := dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
+	checkErr(err, "Select failed")
+	b, err := json.Marshal(shoppinglist)
+	checkErr(err, "Marshal failed")
+	fmt.Fprint(w, string(b))
+}
+
+func addEntry(w http.ResponseWriter, r *http.Request) {
+	var shoppinglist []ShoppingEntry
+	dbmap := initDb()
+	defer dbmap.Db.Close()
+	// fetch all rows
+	_, err := dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
+	checkErr(err, "Select failed")
+	b, err := json.Marshal(shoppinglist)
+	checkErr(err, "Marshal failed")
+	fmt.Fprint(w, string(b))
+}
+
+func doneEntry(w http.ResponseWriter, r *http.Request) {
+	var shoppinglist []ShoppingEntry
+	dbmap := initDb()
+	defer dbmap.Db.Close()
+	// fetch all rows
+	_, err := dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
+	checkErr(err, "Select failed")
+	b, err := json.Marshal(shoppinglist)
+	checkErr(err, "Marshal failed")
+	fmt.Fprint(w, string(b))
+}
+
+func handleEntry(w http.ResponseWriter, r *http.Request) {
+	var entry ShoppingEntry
+	vars := mux.Vars(r)
+	id := vars["id"]
+	log.Println(id)
+	dbmap := initDb()
+	defer dbmap.Db.Close()
+
+	switch r.Method {
+	case "GET":
+		err := dbmap.SelectOne(&entry, "select * from shoppingentry where id=?", id)
+		checkErr(err, "SelectOne failed")
+		b, err := json.Marshal(entry)
+		checkErr(err, "Marshal failed")
+		fmt.Fprint(w, string(b))
+	case "DELETE":
+		_, err := dbmap.Exec("delete from shoppingentry where id=?", id)
+		checkErr(err, "SelectOne failed")
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+}
+
+func main() {
+
+	// initialize the DbMap
+	//dbmap := initDb()
+	//defer dbmap.Db.Close()
 
 	// delete any existing rows
 	// err := dbmap.TruncateTables()
 	// checkErr(err, "TruncateTables failed")
 
 	// insert rows - auto increment PKs will be set properly after the insert
-	e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6)
-	e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3)
+	//e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6)
+	//e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3)
 
 	// insert two entries
-	err := dbmap.Insert(&e1, &e2)
-	checkErr(err, "Insert Failed!")
+	//err := dbmap.Insert(&e1, &e2)
+	//checkErr(err, "Insert Failed!")
 
 	// fetch all rows
-	_, err = dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
-	checkErr(err, "Select failed")
+	//	_, err = dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
+	//	checkErr(err, "Select failed")
+	//	for _, v := range shoppinglist {
+	//		log.Println(v)
+	//	}
+
+	router := mux.NewRouter()
+	router.HandleFunc("/entries", handleEntries).Methods("GET")
+	router.HandleFunc("/entry/{id}", handleEntry).Methods("GET", "DELETE")
+	http.ListenAndServe(":8080", router)
 
 	//log.Println("All rows:")
 	//for x, p := range shoppinglist {
