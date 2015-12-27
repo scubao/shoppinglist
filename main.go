@@ -3,6 +3,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"log"
 	"time"
@@ -11,23 +12,14 @@ import (
 	"gopkg.in/gorp.v1"
 )
 
-type shopObject struct {
-	id       int64
-	user     string
-	produkt  string
-	anzahl   int64
-	ort      string
-	erledigt bool
-}
-
 type ShoppingEntry struct {
-	Id      int64 `db:"shopping_id"`
-	Created int64
-	User    string
-	Amount  int64
-	Name    string
-	Market  string
-	Done    bool
+	Id      int64  `db:"id" json:"id"`
+	Created int64  `db:"created" json:"created"`
+	User    string `json:"user"`
+	Amount  int64  `json:"amount"`
+	Name    string `json:"name"`
+	Market  string `json:"market"`
+	Done    bool   `json:"done"`
 }
 
 func newShoppingEntry(user, name, market string, amount int64) ShoppingEntry {
@@ -39,7 +31,12 @@ func newShoppingEntry(user, name, market string, amount int64) ShoppingEntry {
 		Market:  market,
 		Done:    false,
 	}
+}
 
+func jsonShoppingEntry(p ShoppingEntry) {
+	m, err := json.Marshal(p)
+	checkErr(err, "Marshal failed")
+	log.Printf("m = %+v\n", string(m))
 }
 
 func parseCommandline() ShoppingEntry {
@@ -80,88 +77,66 @@ func checkErr(err error, msg string) {
 	}
 }
 
-type Post struct {
-	// db tag lets you specify the column name if it differs from the struct field
-	Id      int64 `db:"post_id"`
-	Created int64
-	Title   string `db:",size:50"`               // Column size set to 50
-	Body    string `db:"article_body,size:1024"` // Set both column name and size
-}
-
-func newPost(title, body string) Post {
-	return Post{
-		Created: time.Now().UnixNano(),
-		Title:   title,
-		Body:    body,
-	}
-}
-
 func main() {
-	var todos map[int64]ShoppingEntry
-	todos = make(map[int64]ShoppingEntry)
-	testobject := parseCommandline()
-	todos[1] = testobject
-	log.Println(todos)
+	var shoppinglist []ShoppingEntry
 
 	// initialize the DbMap
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 
 	// delete any existing rows
-	//err := dbmap.TruncateTables()
-	//checkErr(err, "TruncateTables failed")
+	// err := dbmap.TruncateTables()
+	// checkErr(err, "TruncateTables failed")
 
-	// create two posts
+	// insert rows - auto increment PKs will be set properly after the insert
 	e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6)
 	e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3)
 
-	// insert rows - auto increment PKs will be set properly after the insert
+	// insert two entries
 	err := dbmap.Insert(&e1, &e2)
-	checkErr(err, "Insert failed")
+	checkErr(err, "Insert Failed!")
+
+	// fetch all rows
+	_, err = dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
+	checkErr(err, "Select failed")
+
+	//log.Println("All rows:")
+	//for x, p := range shoppinglist {
+	//	log.Printf("    %d: %v\n", x, p)
+	//}
 
 	// use convenience SelectInt
-	count, err := dbmap.SelectInt("select count(*) from shoppingentry")
-	checkErr(err, "select count(*) failed")
-	log.Println("Rows after inserting:", count)
+	//count, err := dbmap.SelectInt("select count(*) from shoppingentry")
+	//checkErr(err, "select count(*) failed")
+	//log.Println("Rows after inserting:", count)
 
 	// update a row
-	e2.Name = "Äpfel"
-	count, err = dbmap.Update(&e2)
-	checkErr(err, "Update failed")
-	log.Println("Rows updated:", count)
+	//e2.Name = "Äpfel"
+	//count, err = dbmap.Update(&e2)
+	//checkErr(err, "Update failed")
+	//log.Println("Rows updated:", count)
 
 	// fetch one row - note use of "post_id" instead of "Id" since column is aliased
 	//
 	// Postgres users should use $1 instead of ? placeholders
 	// See 'Known Issues' below
 	//
-	err = dbmap.SelectOne(&e2, "select * from shoppingentry where shopping_id=?", e2.Id)
-	checkErr(err, "SelectOne failed")
-	log.Println("e2 row:", e2)
-
-	// fetch all rows
-	var shoppingentries []ShoppingEntry
-	_, err = dbmap.Select(&shoppingentries, "select * from shoppingentry order by shopping_id")
-	checkErr(err, "Select failed")
-	log.Println("All rows:")
-	for x, p := range shoppingentries {
-		log.Printf("    %d: %v\n", x, p)
-	}
+	//err = dbmap.SelectOne(&e2, "select * from shoppingentry where shopping_id=?", e2.Id)
+	//checkErr(err, "SelectOne failed")
+	//log.Println("e2 row:", e2)
 
 	// delete row by PK
-	count, err = dbmap.Delete(&e1)
-	checkErr(err, "Delete failed")
-	log.Println("Rows deleted:", count)
+	//count, err = dbmap.Delete(&e1)
+	//checkErr(err, "Delete failed")
+	//log.Println("Rows deleted:", count)
 
 	// delete row manually via Exec
-	_, err = dbmap.Exec("delete from shoppingentry where shopping_id=?", e2.Id)
-	checkErr(err, "Exec failed")
+	//_, err = dbmap.Exec("delete from shoppingentry where shopping_id=?", e2.Id)
+	//checkErr(err, "Exec failed")
 
 	// confirm count is zero
-	count, err = dbmap.SelectInt("select count(*) from shoppingentry")
-	checkErr(err, "select count(*) failed")
-	log.Println("Row count - should be zero:", count)
-
-	log.Println("Done!")
+	//count, err = dbmap.SelectInt("select count(*) from shoppingentry")
+	//checkErr(err, "select count(*) failed")
+	//log.Println("Row count - should be zero:", count)
 
 }
