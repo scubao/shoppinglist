@@ -117,6 +117,7 @@ func doneEntry(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleEntry(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var entry ShoppingEntry
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -135,6 +136,21 @@ func handleEntry(w http.ResponseWriter, r *http.Request) {
 		_, err := dbmap.Exec("delete from shoppingentry where id=?", id)
 		checkErr(err, "SelectOne failed")
 		w.WriteHeader(http.StatusNoContent)
+	case "POST":
+		log.Println("Post")
+		entry := new(ShoppingEntry)
+		decoder := json.NewDecoder(r.Body)
+		error := decoder.Decode(&entry)
+		if error != nil {
+			log.Println(error.Error())
+			http.Error(w, error.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		newentry := newShoppingEntry(entry.User, entry.Name, entry.Market, entry.Amount)
+		log.Println(newentry)
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, newentry)
 	}
 
 }
@@ -166,7 +182,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/entries", handleEntries).Methods("GET")
-	router.HandleFunc("/entry/{id}", handleEntry).Methods("GET", "DELETE")
+	router.HandleFunc("/entry/{id}", handleEntry).Methods("GET", "DELETE", "POST")
 	http.ListenAndServe(":8080", router)
 
 	//log.Println("All rows:")
