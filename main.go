@@ -4,7 +4,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,23 +35,6 @@ func newShoppingEntry(user, name, market string, amount int64) ShoppingEntry {
 	}
 }
 
-func jsonShoppingEntry(p ShoppingEntry) {
-	m, err := json.Marshal(p)
-	checkErr(err, "Marshal failed")
-	log.Printf("m = %+v\n", string(m))
-}
-
-func parseCommandline() ShoppingEntry {
-	userflag := flag.String("user", "Oliver", "Username")
-	produktflag := flag.String("produkt", "Eier", "Produkt")
-	anzahlflag := flag.Int64("anzahl", 1, "Anzahl")
-	ortflag := flag.String("ort", "Rewe", "Ort")
-	//erledigtflag := flag.Bool("erledigt", false, "Erledigt")
-	flag.Parse()
-	return newShoppingEntry(*userflag, *produktflag, *ortflag, *anzahlflag)
-	//	return shopObject{1, *userflag, *produktflag, *anzahlflag, *ortflag, *erledigtflag}
-}
-
 func initDb() *gorp.DbMap {
 	// connect to db using standard Go database/sql API
 	// use whatever database/sql driver you wish
@@ -81,7 +63,7 @@ func checkErr(err error, msg string) {
 }
 
 func handleEntries(w http.ResponseWriter, r *http.Request) {
-	var shoppinglist []ShoppingEntry
+	//	var shoppinglist []ShoppingEntry
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 	// fetch all rows
@@ -93,7 +75,7 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 }
 
 func addEntry(w http.ResponseWriter, r *http.Request) {
-	var shoppinglist []ShoppingEntry
+	//	var shoppinglist []ShoppingEntry
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 	// fetch all rows
@@ -105,7 +87,7 @@ func addEntry(w http.ResponseWriter, r *http.Request) {
 }
 
 func doneEntry(w http.ResponseWriter, r *http.Request) {
-	var shoppinglist []ShoppingEntry
+	//var shoppinglist []ShoppingEntry
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 	// fetch all rows
@@ -121,23 +103,24 @@ func handleEntry(w http.ResponseWriter, r *http.Request) {
 	var entry ShoppingEntry
 	vars := mux.Vars(r)
 	id := vars["id"]
-	log.Println(id)
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 
 	switch r.Method {
 	case "GET":
+		log.Println("GET")
 		err := dbmap.SelectOne(&entry, "select * from shoppingentry where id=?", id)
 		checkErr(err, "SelectOne failed")
 		b, err := json.Marshal(entry)
 		checkErr(err, "Marshal failed")
 		fmt.Fprint(w, string(b))
 	case "DELETE":
+		log.Println("DELETE")
 		_, err := dbmap.Exec("delete from shoppingentry where id=?", id)
 		checkErr(err, "SelectOne failed")
 		w.WriteHeader(http.StatusNoContent)
 	case "POST":
-		log.Println("Post")
+		log.Println("POST")
 		entry := new(ShoppingEntry)
 		decoder := json.NewDecoder(r.Body)
 		error := decoder.Decode(&entry)
@@ -146,32 +129,35 @@ func handleEntry(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, error.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		newentry := newShoppingEntry(entry.User, entry.Name, entry.Market, entry.Amount)
 		log.Println(newentry)
 		w.WriteHeader(http.StatusCreated)
+		err := dbmap.Insert(&newentry)
+		checkErr(err, "Insert Failed!")
 		fmt.Fprint(w, newentry)
 	}
 
 }
 
+var shoppinglist []ShoppingEntry
+
 func main() {
 
 	// initialize the DbMap
-	//dbmap := initDb()
-	//defer dbmap.Db.Close()
+	dbmap := initDb()
+	defer dbmap.Db.Close()
 
 	// delete any existing rows
 	// err := dbmap.TruncateTables()
 	// checkErr(err, "TruncateTables failed")
 
 	// insert rows - auto increment PKs will be set properly after the insert
-	//e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6)
-	//e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3)
+	e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6)
+	e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3)
 
 	// insert two entries
-	//err := dbmap.Insert(&e1, &e2)
-	//checkErr(err, "Insert Failed!")
+	err := dbmap.Insert(&e1, &e2)
+	checkErr(err, "Insert Failed!")
 
 	// fetch all rows
 	//	_, err = dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
@@ -179,6 +165,9 @@ func main() {
 	//	for _, v := range shoppinglist {
 	//		log.Println(v)
 	//	}
+
+	//dbmap := initDb()
+	//	defer dbmap.Db.Close()
 
 	router := mux.NewRouter()
 	router.HandleFunc("/entries", handleEntries).Methods("GET")
@@ -202,10 +191,6 @@ func main() {
 	//log.Println("Rows updated:", count)
 
 	// fetch one row - note use of "post_id" instead of "Id" since column is aliased
-	//
-	// Postgres users should use $1 instead of ? placeholders
-	// See 'Known Issues' below
-	//
 	//err = dbmap.SelectOne(&e2, "select * from shoppingentry where shopping_id=?", e2.Id)
 	//checkErr(err, "SelectOne failed")
 	//log.Println("e2 row:", e2)
