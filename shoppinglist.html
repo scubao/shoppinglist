@@ -9,10 +9,14 @@
 </head>
 <body>
 <body ng-app="httptest">
+	<md-input-container>	
+	<label>Title</label>
+	        <input ng-model="item.name">
+	      </md-input-container>
 <md-list ng-controller="getShoppingEntries">
-    <md-list-item ng-repeat="item in data">
-        <p> {{item.name}}</p>
+    	<md-list-item ng-repeat="item in data">
         <md-checkbox ng-model="item.done"></md-checkbox>
+        <p> {{item.name}}</p>
     </md-list-item>
 </md-list>
 </body>

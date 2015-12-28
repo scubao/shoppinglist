@@ -148,6 +148,7 @@ func handleEntry(w http.ResponseWriter, r *http.Request) {
 var shoppinglist []ShoppingEntry
 
 func main() {
+	log.Println("Shoppinglist Server started")
 
 	// initialize the DbMap
 	dbmap := initDb()
@@ -158,7 +159,7 @@ func main() {
 	// checkErr(err, "TruncateTables failed")
 
 	// insert rows - auto increment PKs will be set properly after the insert
-	e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6, false)
+	e1 := newShoppingEntry("Oliver", "Mini-Deo", "DM", 6, false)
 	e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3, true)
 
 	// insert two entries
