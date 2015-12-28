@@ -24,14 +24,14 @@ type ShoppingEntry struct {
 	Done    bool   `json:"done"`
 }
 
-func newShoppingEntry(user, name, market string, amount int64) ShoppingEntry {
+func newShoppingEntry(user, name, market string, amount int64, done bool) ShoppingEntry {
 	return ShoppingEntry{
 		Created: time.Now().UnixNano(),
 		User:    user,
 		Amount:  amount,
 		Name:    name,
 		Market:  market,
-		Done:    false,
+		Done:    done,
 	}
 }
 
@@ -63,7 +63,7 @@ func checkErr(err error, msg string) {
 }
 
 func handleEntries(w http.ResponseWriter, r *http.Request) {
-	//	var shoppinglist []ShoppingEntry
+	var shoppinglist []ShoppingEntry
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	dbmap := initDb()
@@ -73,6 +73,7 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 	checkErr(err, "Select failed")
 	b, err := json.Marshal(shoppinglist)
 	checkErr(err, "Marshal failed")
+	//log.Println(string(b))
 	fmt.Fprint(w, string(b))
 }
 
@@ -113,7 +114,7 @@ func handleEntry(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		log.Println("GET")
+		log.Println("GET", id)
 		err := dbmap.SelectOne(&entry, "select * from shoppingentry where id=?", id)
 		checkErr(err, "SelectOne failed")
 		b, err := json.Marshal(entry)
@@ -134,7 +135,7 @@ func handleEntry(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, error.Error(), http.StatusInternalServerError)
 			return
 		}
-		newentry := newShoppingEntry(entry.User, entry.Name, entry.Market, entry.Amount)
+		newentry := newShoppingEntry(entry.User, entry.Name, entry.Market, entry.Amount, false)
 		log.Println(newentry)
 		w.WriteHeader(http.StatusCreated)
 		err := dbmap.Insert(&newentry)
@@ -157,8 +158,8 @@ func main() {
 	// checkErr(err, "TruncateTables failed")
 
 	// insert rows - auto increment PKs will be set properly after the insert
-	e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6)
-	e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3)
+	e1 := newShoppingEntry("Oliver", "Bananen", "Rewe", 6, false)
+	e2 := newShoppingEntry("Oliver", "Birnen", "Aldi", 3, true)
 
 	// insert two entries
 	err := dbmap.Insert(&e1, &e2)
