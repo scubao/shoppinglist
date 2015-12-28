@@ -64,6 +64,8 @@ func checkErr(err error, msg string) {
 
 func handleEntries(w http.ResponseWriter, r *http.Request) {
 	//	var shoppinglist []ShoppingEntry
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 	// fetch all rows
@@ -88,6 +90,7 @@ func addEntry(w http.ResponseWriter, r *http.Request) {
 
 func doneEntry(w http.ResponseWriter, r *http.Request) {
 	//var shoppinglist []ShoppingEntry
+	w.Header().Set("Content-Type", "application/json")
 	dbmap := initDb()
 	defer dbmap.Db.Close()
 	// fetch all rows
@@ -100,6 +103,8 @@ func doneEntry(w http.ResponseWriter, r *http.Request) {
 
 func handleEntry(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	// CORS prevention
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	var entry ShoppingEntry
 	vars := mux.Vars(r)
 	id := vars["id"]
