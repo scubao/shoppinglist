@@ -68,6 +68,7 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	dbmap := initDb()
 	defer dbmap.Db.Close()
+	log.Println("GET All Entries")
 	// fetch all rows
 	_, err := dbmap.Select(&shoppinglist, "select * from shoppingentry order by id")
 	checkErr(err, "Select failed")
