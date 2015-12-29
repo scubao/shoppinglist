@@ -28,6 +28,11 @@
         <md-checkbox ng-model="item.done" ng-change="save(item)"></md-checkbox>
         <p> {{item.name}}</p>
         <p> {{ message }}</p>
+	<!-- Button with SVG Icon -->
+	<md-button class="md-icon-button" aria-label="Custom Icon Button">
+		  <md-icon md-svg-icon="ic_highlight_off_black_24px.svg"></md-icon>
+	</md-button>
+	<!-- <md&#45;button class="md&#45;secondary" ng&#45;click="doSecondaryAction($event)">More Info</md&#45;button> -->
     </md-list-item>
 </md-list>
 

@@ -1,6 +1,3 @@
-/**
- * Created by oliver on 28.12.15.
- */
 
 var app = angular.module('httptest', ['ngMaterial']);
 
