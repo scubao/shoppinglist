@@ -15,11 +15,12 @@
 
     <script src="app.js"></script>
 </head>
+
 <body ng-app="httptest">
 
-<md-input-container>
-    <label>Produkt</label>
-    <input ng-model="item.name">
+<md-input-container ng-controller="getShoppingEntries">
+    <label>Produkt {{ newproduct  }}</label>
+    <input ng-model="hanspeter" ng-keypress="checkEnter($event)">
 </md-input-container>
 
 <md-list ng-controller="getShoppingEntries">
